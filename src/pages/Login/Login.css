@@ -21,12 +21,12 @@
   align-items: center;
   justify-content: center;
   background-color: #ffffff;
-  padding: 40px;
+  padding: 50px;
 }
 
 .login-card {
   width: 100%;
-  max-width: 480px;
+  max-width: 520px;
   background-color: transparent;
   border-radius: 0;
   box-shadow: none;
@@ -37,47 +37,48 @@
 .logo-row {
   display: flex;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 30px;
 }
 
 .logo-icon {
-  width: 32px;
-  height: 32px;
-  margin-right: 10px;
+  width: 36px;
+  height: 36px;
+  margin-right: 12px;
 }
 
 .logo-text-main {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
   color: #1f2937;
 }
 
 .logo-text-sub {
-  font-size: 11px;
+  font-size: 12px;
   color: #6b7280;
 }
 
 /* Welcome Section */
 .welcome-text {
-  margin-bottom: 32px;
+  margin-bottom: 36px;
 }
 
 .welcome-text p {
-  font-size: 13px;
+  font-size: 14px;
   color: #6b7280;
+  line-height: 1.5;
 }
 
 /* Form Styles */
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 
 .form-label {
   display: block;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: #374151;
-  margin-bottom: 6px;
+  margin-bottom: 7px;
 }
 
 .required {
@@ -90,11 +91,11 @@
 
 .form-input {
   width: 100%;
-  padding: 10px 12px;
-  padding-right: 40px; /* Make space for password toggle button */
-  border-radius: 4px;
+  padding: 12px 14px;
+  padding-right: 42px; /* Make space for password toggle button */
+  border-radius: 5px;
   border: 1px solid #d1d5db;
-  font-size: 13px;
+  font-size: 14px;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   background-color: #fafafa; /* Off-white background */
@@ -125,19 +126,19 @@
 /* Password Toggle Button */
 .password-toggle-btn {
   position: absolute;
-  right: 12px;
+  right: 14px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
   cursor: pointer;
   color: #6b7280;
-  padding: 4px;
+  padding: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: color 0.15s ease;
-  border-radius: 2px;
+  border-radius: 3px;
 }
 
 .password-toggle-btn:hover:not(:disabled) {
@@ -156,26 +157,26 @@
 
 /* Adjust padding for inputs that don't need the toggle button (email) */
 .form-input[type="email"] {
-  padding-right: 12px;
+  padding-right: 14px;
 }
 
 /* Button Styles */
 .login-button {
   width: 100%;
-  margin-top: 10px;
-  padding: 10px 0;
+  margin-top: 14px;
+  padding: 12px 0;
   border: none;
-  border-radius: 4px;
+  border-radius: 5px;
   background-color: #1f2933;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.15s ease, transform 0.05s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
+  min-height: 44px;
 }
 
 .login-button:hover:not(:disabled) {
@@ -252,12 +253,12 @@
   .login-right {
     flex: none;
     height: 100vh;
-    padding: 40px 20px;
+    padding: 45px 25px;
   }
 
   .login-card {
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
     padding: 0;
   }
 }
