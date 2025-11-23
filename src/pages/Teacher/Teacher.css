@@ -1,0 +1,24 @@
+/* Teacher Dashboard Styles */
+.teacher-page {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f0f9ff;
+}
+
+.dashboard-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.dashboard-content h1 {
+  font-size: 2.5rem;
+  color: #1f2937;
+  font-weight: 600;
+  text-align: center;
+  margin: 0;
+}
