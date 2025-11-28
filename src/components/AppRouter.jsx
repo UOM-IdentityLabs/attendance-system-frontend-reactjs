@@ -70,6 +70,7 @@ const AppRouter = () => {
     }
 
     switch (currentUser.role) {
+      case "department_head":
       case "departmentHead":
         return <DepartmentHead user={currentUser} />;
       case "teacher":
