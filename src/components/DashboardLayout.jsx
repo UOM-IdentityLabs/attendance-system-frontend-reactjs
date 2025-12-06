@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import Sidebar from "./Sidebar";
+import UserProfile from "./UserProfile";
+import YearsManagement from "./YearsManagement";
+import GroupsManagement from "./GroupsManagement";
 import "./DashboardLayout.css";
 
 const DashboardLayout = ({ user, children }) => {
@@ -160,26 +163,11 @@ const DashboardLayout = ({ user, children }) => {
           </div>
         );
       case "groups":
-        return (
-          <div className="content-page">
-            <h1>Groups</h1>
-            <p>Manage student groups and class sections.</p>
-          </div>
-        );
+        return <GroupsManagement />;
       case "years":
-        return (
-          <div className="content-page">
-            <h1>Years</h1>
-            <p>Manage academic years and semesters.</p>
-          </div>
-        );
+        return <YearsManagement />;
       case "userProfile":
-        return (
-          <div className="content-page">
-            <h1>User Profile</h1>
-            <p>Manage your profile settings and preferences.</p>
-          </div>
-        );
+        return <UserProfile />;
       default:
         return (
           <div className="content-page">
