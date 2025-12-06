@@ -15,6 +15,8 @@ const GroupsManagement = () => {
   const [formData, setFormData] = useState({ groupName: "" });
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTimeout, setSearchTimeout] = useState(null);
 
   const limit = 100;
 
@@ -22,14 +24,18 @@ const GroupsManagement = () => {
     fetchGroups();
   }, [currentPage]);
 
-  const fetchGroups = async () => {
+  const fetchGroups = async (searchValue = searchTerm) => {
     try {
       setLoading(true);
       setError(null);
       const offset = (currentPage - 1) * limit;
-      const response = await apiClient.get(
-        `/groups?limit=${limit}&offset=${offset}`
-      );
+      let url = `/groups?limit=${limit}&offset=${offset}`;
+
+      if (searchValue && searchValue.trim()) {
+        url += `&search=${encodeURIComponent(searchValue.trim())}`;
+      }
+
+      const response = await apiClient.get(url);
       setGroups(response.data.groups);
       setTotalGroups(response.data.total);
     } catch (err) {
@@ -54,6 +60,40 @@ const GroupsManagement = () => {
     }
 
     return errors;
+  };
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    setCurrentPage(1); // Reset to first page when searching
+
+    // Clear existing timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    // If search is empty, fetch immediately without debounce
+    if (!value || !value.trim()) {
+      fetchGroups(""); // Pass empty string explicitly
+      return;
+    }
+
+    // Set new timeout for debounced search
+    const newTimeout = setTimeout(() => {
+      fetchGroups(value); // Pass the current value
+    }, 500);
+
+    setSearchTimeout(newTimeout);
+  };
+
+  const clearSearch = () => {
+    setSearchTerm("");
+    setCurrentPage(1);
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    // Pass empty string explicitly to fetch all groups
+    fetchGroups("");
   };
 
   const handleInputChange = (e) => {
@@ -215,6 +255,46 @@ const GroupsManagement = () => {
           <h1>Groups Management</h1>
           <p>Manage student groups and class sections</p>
         </div>
+      </div>
+
+      {/* Search Bar and Add Button */}
+      <div className="search-container">
+        <div className="search-input-wrapper">
+          <svg
+            className="search-icon"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="M21 21l-4.35-4.35"></path>
+          </svg>
+          <input
+            type="text"
+            placeholder="Search groups..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="search-input"
+          />
+          {searchTerm && (
+            <button className="search-clear" onClick={clearSearch}>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          )}
+        </div>
         <button className="btn-primary" onClick={openAddModal}>
           <svg
             width="16"
@@ -278,10 +358,16 @@ const GroupsManagement = () => {
                       <line x1="9" y1="9" x2="9.01" y2="9"></line>
                       <line x1="15" y1="9" x2="15.01" y2="9"></line>
                     </svg>
-                    <p>No groups found</p>
-                    <button className="btn-primary" onClick={openAddModal}>
-                      Add First Group
-                    </button>
+                    <p>
+                      {searchTerm
+                        ? `No groups found for "${searchTerm}"`
+                        : "No groups found"}
+                    </p>
+                    {!searchTerm && (
+                      <button className="btn-primary" onClick={openAddModal}>
+                        Add First Group
+                      </button>
+                    )}
                   </td>
                 </tr>
               ) : (

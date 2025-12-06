@@ -1,65 +1,67 @@
 import React, { useState, useEffect } from "react";
 import apiClient from "../services/api";
-import "./YearsManagement.css";
+import "./CoursesManagement.css";
 
-const YearsManagement = () => {
-  const [years, setYears] = useState([]);
+const CoursesManagement = () => {
+  const [courses, setCourses] = useState([]);
+  const [collegeYears, setCollegeYears] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalYears, setTotalYears] = useState(0);
+  const [totalCourses, setTotalCourses] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedYear, setSelectedYear] = useState(null);
-  const [formData, setFormData] = useState({ yearName: "" });
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [formData, setFormData] = useState({
+    courseName: "",
+    semester: "",
+    collegeYearId: "",
+  });
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchTimeout, setSearchTimeout] = useState(null);
 
   const limit = 100;
+  const semesterOptions = [
+    { value: "first", label: "First Semester" },
+    { value: "second", label: "Second Semester" },
+  ];
 
   useEffect(() => {
-    fetchYears();
+    fetchCourses();
+    fetchCollegeYears();
   }, [currentPage]);
 
-  const fetchYears = async (searchValue = searchTerm) => {
+  const fetchCourses = async (searchValue = searchTerm) => {
     try {
       setLoading(true);
       setError(null);
       const offset = (currentPage - 1) * limit;
-      let url = `/college-years?limit=${limit}&offset=${offset}`;
+      let url = `/courses?limit=${limit}&offset=${offset}`;
 
       if (searchValue && searchValue.trim()) {
         url += `&search=${encodeURIComponent(searchValue.trim())}`;
       }
 
       const response = await apiClient.get(url);
-      setYears(response.data.collegeYears);
-      setTotalYears(response.data.total);
+      setCourses(response.data.courses);
+      setTotalCourses(response.data.total);
     } catch (err) {
-      console.error("Error fetching years:", err);
-      setError("Failed to load college years. Please try again.");
+      console.error("Error fetching courses:", err);
+      setError("Failed to load courses. Please try again.");
     } finally {
       setLoading(false);
     }
   };
-
-  const validateYearName = (name) => {
-    const errors = {};
-
-    if (!name || !name.trim()) {
-      errors.yearName = "Year name is required";
-    } else if (!/^[a-zA-Z\s]+$/.test(name.trim())) {
-      errors.yearName = "Year name must contain only letters and spaces";
-    } else if (name.trim().length < 2) {
-      errors.yearName = "Year name must be at least 2 characters long";
-    } else if (name.trim().length > 50) {
-      errors.yearName = "Year name must not exceed 50 characters";
+  const fetchCollegeYears = async () => {
+    try {
+      const response = await apiClient.get("/college-years?limit=1000");
+      setCollegeYears(response.data.collegeYears);
+    } catch (err) {
+      console.error("Error fetching college years:", err);
     }
-
-    return errors;
   };
 
   const handleSearchChange = (e) => {
@@ -74,42 +76,55 @@ const YearsManagement = () => {
 
     // If search is empty, fetch immediately without debounce
     if (!value || !value.trim()) {
-      fetchYears(""); // Pass empty string explicitly
+      fetchCourses(""); // Pass empty string explicitly
       return;
     }
 
     // Set new timeout for debounced search
     const newTimeout = setTimeout(() => {
-      fetchYears(value); // Pass the current value
+      fetchCourses(value); // Pass the current value
     }, 500);
 
     setSearchTimeout(newTimeout);
   };
+  const validateForm = (data) => {
+    const errors = {};
 
-  const clearSearch = () => {
-    setSearchTerm("");
-    setCurrentPage(1);
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
+    if (!data.courseName || !data.courseName.trim()) {
+      errors.courseName = "Course name is required";
+    } else if (!/^[a-zA-Z\s]+$/.test(data.courseName.trim())) {
+      errors.courseName = "Course name must contain only letters and spaces";
+    } else if (data.courseName.trim().length < 2) {
+      errors.courseName = "Course name must be at least 2 characters long";
+    } else if (data.courseName.trim().length > 100) {
+      errors.courseName = "Course name must not exceed 100 characters";
     }
-    // Pass empty string explicitly to fetch all years
-    fetchYears("");
+
+    if (!data.semester) {
+      errors.semester = "Semester is required";
+    }
+
+    if (!data.collegeYearId) {
+      errors.collegeYearId = "College year is required";
+    }
+
+    return errors;
   };
 
   const handleInputChange = (e) => {
-    const { value } = e.target;
-    setFormData({ yearName: value });
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
     // Clear errors when user starts typing
-    if (formErrors.yearName) {
-      setFormErrors({});
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
-  const handleAddYear = async (e) => {
+  const handleAddCourse = async (e) => {
     e.preventDefault();
 
-    const errors = validateYearName(formData.yearName);
+    const errors = validateForm(formData);
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
@@ -117,29 +132,31 @@ const YearsManagement = () => {
 
     try {
       setSubmitting(true);
-      await apiClient.post("/college-years", {
-        yearName: formData.yearName.trim(),
+      await apiClient.post("/courses", {
+        courseName: formData.courseName.trim(),
+        semester: formData.semester,
+        collegeYearId: formData.collegeYearId,
       });
 
       setShowAddModal(false);
-      setFormData({ yearName: "" });
+      setFormData({ courseName: "", semester: "", collegeYearId: "" });
       setFormErrors({});
-      await fetchYears();
+      await fetchCourses();
     } catch (err) {
-      console.error("Error adding year:", err);
+      console.error("Error adding course:", err);
       const errorMessage =
         err.response?.data?.message ||
-        "Failed to add college year. Please try again.";
+        "Failed to add course. Please try again.";
       setFormErrors({ submit: errorMessage });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleEditYear = async (e) => {
+  const handleEditCourse = async (e) => {
     e.preventDefault();
 
-    const errors = validateYearName(formData.yearName);
+    const errors = validateForm(formData);
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
@@ -147,57 +164,63 @@ const YearsManagement = () => {
 
     try {
       setSubmitting(true);
-      await apiClient.patch(`/college-years/${selectedYear.id}`, {
-        yearName: formData.yearName.trim(),
+      await apiClient.patch(`/courses/${selectedCourse.id}`, {
+        courseName: formData.courseName.trim(),
+        semester: formData.semester,
+        collegeYearId: formData.collegeYearId,
       });
 
       setShowEditModal(false);
-      setSelectedYear(null);
-      setFormData({ yearName: "" });
+      setSelectedCourse(null);
+      setFormData({ courseName: "", semester: "", collegeYearId: "" });
       setFormErrors({});
-      await fetchYears();
+      await fetchCourses();
     } catch (err) {
-      console.error("Error updating year:", err);
+      console.error("Error updating course:", err);
       const errorMessage =
         err.response?.data?.message ||
-        "Failed to update college year. Please try again.";
+        "Failed to update course. Please try again.";
       setFormErrors({ submit: errorMessage });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDeleteYear = async () => {
+  const handleDeleteCourse = async () => {
     try {
       setSubmitting(true);
-      await apiClient.delete(`/college-years/${selectedYear.id}`);
+      await apiClient.delete(`/courses/${selectedCourse.id}`);
 
       setShowDeleteModal(false);
-      setSelectedYear(null);
-      await fetchYears();
+      setSelectedCourse(null);
+      await fetchCourses();
     } catch (err) {
-      console.error("Error deleting year:", err);
-      setError("Failed to delete college year. Please try again.");
+      console.error("Error deleting course:", err);
+      setError("Failed to delete course. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
   const openAddModal = () => {
-    setFormData({ yearName: "" });
+    setFormData({ courseName: "", semester: "", collegeYearId: "" });
     setFormErrors({});
     setShowAddModal(true);
   };
 
-  const openEditModal = (year) => {
-    setSelectedYear(year);
-    setFormData({ yearName: year.yearName });
+  const openEditModal = (course) => {
+    setSelectedCourse(course);
+    setFormData({
+      courseName: course.courseName,
+      semester: course.semester,
+      collegeYearId: course.collegeYear.id,
+    });
     setFormErrors({});
     setShowEditModal(true);
   };
 
-  const openDeleteModal = (year) => {
-    setSelectedYear(year);
+  const openDeleteModal = (course) => {
+    setSelectedCourse(course);
     setShowDeleteModal(true);
   };
 
@@ -205,8 +228,8 @@ const YearsManagement = () => {
     setShowAddModal(false);
     setShowEditModal(false);
     setShowDeleteModal(false);
-    setSelectedYear(null);
-    setFormData({ yearName: "" });
+    setSelectedCourse(null);
+    setFormData({ courseName: "", semester: "", collegeYearId: "" });
     setFormErrors({});
   };
 
@@ -220,11 +243,25 @@ const YearsManagement = () => {
     });
   };
 
-  const totalPages = Math.ceil(totalYears / limit);
+  const formatSemester = (semester) => {
+    return semester.charAt(0).toUpperCase() + semester.slice(1) + " Semester";
+  };
 
-  if (loading) {
+  const clearSearch = () => {
+    setSearchTerm("");
+    setCurrentPage(1);
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    // Pass empty string explicitly to fetch all courses
+    fetchCourses("");
+  };
+
+  const totalPages = Math.ceil(totalCourses / limit);
+
+  if (loading && courses.length === 0) {
     return (
-      <div className="years-management-container">
+      <div className="courses-management-container">
         <div className="loading-state">
           <div className="loading-spinner">
             <svg className="spinner" fill="none" viewBox="0 0 24 24">
@@ -243,22 +280,22 @@ const YearsManagement = () => {
               />
             </svg>
           </div>
-          <p>Loading college years...</p>
+          <p>Loading courses...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="years-management-container">
+    <div className="courses-management-container">
       <div className="page-header">
         <div className="header-content">
-          <h1>College Years Management</h1>
-          <p>Manage academic years for your institution</p>
+          <h1>Courses Management</h1>
+          <p>Manage academic courses and curricula</p>
         </div>
       </div>
 
-      {/* Search Bar and Add Button */}
+      {/* Search Bar */}
       <div className="search-container">
         <div className="search-input-wrapper">
           <svg
@@ -275,7 +312,7 @@ const YearsManagement = () => {
           </svg>
           <input
             type="text"
-            placeholder="Search years..."
+            placeholder="Search courses..."
             value={searchTerm}
             onChange={handleSearchChange}
             className="search-input"
@@ -308,7 +345,7 @@ const YearsManagement = () => {
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
-          Add New Year
+          Add New Course
         </button>
       </div>
 
@@ -333,19 +370,21 @@ const YearsManagement = () => {
 
       <div className="table-container">
         <div className="table-wrapper">
-          <table className="years-table">
+          <table className="courses-table">
             <thead>
               <tr>
-                <th>Year Name</th>
+                <th>Course Name</th>
+                <th>Semester</th>
+                <th>College Year</th>
+                <th>Department</th>
                 <th>Created At</th>
-                <th>Updated At</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {years.length === 0 ? (
+              {courses.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="empty-state">
+                  <td colSpan="6" className="empty-state">
                     <svg
                       width="48"
                       height="48"
@@ -361,30 +400,36 @@ const YearsManagement = () => {
                     </svg>
                     <p>
                       {searchTerm
-                        ? `No years found for "${searchTerm}"`
-                        : "No years found"}
+                        ? `No courses found for "${searchTerm}"`
+                        : "No courses found"}
                     </p>
                     {!searchTerm && (
                       <button className="btn-primary" onClick={openAddModal}>
-                        Add First Year
+                        Add First Course
                       </button>
                     )}
                   </td>
                 </tr>
               ) : (
-                years.map((year) => (
-                  <tr key={year.id}>
+                courses.map((course) => (
+                  <tr key={course.id}>
                     <td>
-                      <span className="year-name">{year.yearName}</span>
+                      <span className="course-name">{course.courseName}</span>
                     </td>
-                    <td>{formatDate(year.createdAt)}</td>
-                    <td>{formatDate(year.updatedAt)}</td>
+                    <td>
+                      <span className="semester-badge">
+                        {formatSemester(course.semester)}
+                      </span>
+                    </td>
+                    <td>{course.collegeYear.yearName}</td>
+                    <td>{course.department.departmentName}</td>
+                    <td>{formatDate(course.createdAt)}</td>
                     <td>
                       <div className="action-buttons">
                         <button
                           className="btn-edit"
-                          onClick={() => openEditModal(year)}
-                          title="Edit year"
+                          onClick={() => openEditModal(course)}
+                          title="Edit course"
                         >
                           <svg
                             width="14"
@@ -400,8 +445,8 @@ const YearsManagement = () => {
                         </button>
                         <button
                           className="btn-delete"
-                          onClick={() => openDeleteModal(year)}
-                          title="Delete year"
+                          onClick={() => openDeleteModal(course)}
+                          title="Delete course"
                         >
                           <svg
                             width="14"
@@ -445,7 +490,7 @@ const YearsManagement = () => {
             </button>
 
             <span className="pagination-info">
-              Page {currentPage} of {totalPages} • {totalYears} total years
+              Page {currentPage} of {totalPages} • {totalCourses} total courses
             </span>
 
             <button
@@ -474,25 +519,70 @@ const YearsManagement = () => {
         <div className="modal-overlay" onClick={closeModals}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Add New College Year</h3>
+              <h3>Add New Course</h3>
               <button className="modal-close" onClick={closeModals}>
                 ×
               </button>
             </div>
-            <form onSubmit={handleAddYear} className="modal-form">
+            <form onSubmit={handleAddCourse} className="modal-form">
               <div className="form-group">
-                <label htmlFor="yearName">Year Name *</label>
+                <label htmlFor="courseName">Course Name *</label>
                 <input
-                  id="yearName"
+                  id="courseName"
+                  name="courseName"
                   type="text"
-                  value={formData.yearName}
+                  value={formData.courseName}
                   onChange={handleInputChange}
-                  placeholder="e.g., First, Second, Third..."
-                  className={formErrors.yearName ? "error" : ""}
-                  maxLength="50"
+                  placeholder="e.g., Mathematics, Physics..."
+                  className={formErrors.courseName ? "error" : ""}
+                  maxLength="100"
                 />
-                {formErrors.yearName && (
-                  <span className="error-message">{formErrors.yearName}</span>
+                {formErrors.courseName && (
+                  <span className="error-message">{formErrors.courseName}</span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="semester">Semester *</label>
+                <select
+                  id="semester"
+                  name="semester"
+                  value={formData.semester}
+                  onChange={handleInputChange}
+                  className={formErrors.semester ? "error" : ""}
+                >
+                  <option value="">Select semester</option>
+                  {semesterOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                {formErrors.semester && (
+                  <span className="error-message">{formErrors.semester}</span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="collegeYearId">College Year *</label>
+                <select
+                  id="collegeYearId"
+                  name="collegeYearId"
+                  value={formData.collegeYearId}
+                  onChange={handleInputChange}
+                  className={formErrors.collegeYearId ? "error" : ""}
+                >
+                  <option value="">Select college year</option>
+                  {collegeYears.map((year) => (
+                    <option key={year.id} value={year.id}>
+                      {year.yearName}
+                    </option>
+                  ))}
+                </select>
+                {formErrors.collegeYearId && (
+                  <span className="error-message">
+                    {formErrors.collegeYearId}
+                  </span>
                 )}
               </div>
 
@@ -513,7 +603,7 @@ const YearsManagement = () => {
                   className="btn-primary"
                   disabled={submitting}
                 >
-                  {submitting ? "Adding..." : "Add Year"}
+                  {submitting ? "Adding..." : "Add Course"}
                 </button>
               </div>
             </form>
@@ -522,29 +612,74 @@ const YearsManagement = () => {
       )}
 
       {/* Edit Modal */}
-      {showEditModal && selectedYear && (
+      {showEditModal && selectedCourse && (
         <div className="modal-overlay" onClick={closeModals}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Edit College Year</h3>
+              <h3>Edit Course</h3>
               <button className="modal-close" onClick={closeModals}>
                 ×
               </button>
             </div>
-            <form onSubmit={handleEditYear} className="modal-form">
+            <form onSubmit={handleEditCourse} className="modal-form">
               <div className="form-group">
-                <label htmlFor="editYearName">Year Name *</label>
+                <label htmlFor="editCourseName">Course Name *</label>
                 <input
-                  id="editYearName"
+                  id="editCourseName"
+                  name="courseName"
                   type="text"
-                  value={formData.yearName}
+                  value={formData.courseName}
                   onChange={handleInputChange}
-                  placeholder="e.g., First, Second, Third..."
-                  className={formErrors.yearName ? "error" : ""}
-                  maxLength="50"
+                  placeholder="e.g., Mathematics, Physics..."
+                  className={formErrors.courseName ? "error" : ""}
+                  maxLength="100"
                 />
-                {formErrors.yearName && (
-                  <span className="error-message">{formErrors.yearName}</span>
+                {formErrors.courseName && (
+                  <span className="error-message">{formErrors.courseName}</span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="editSemester">Semester *</label>
+                <select
+                  id="editSemester"
+                  name="semester"
+                  value={formData.semester}
+                  onChange={handleInputChange}
+                  className={formErrors.semester ? "error" : ""}
+                >
+                  <option value="">Select semester</option>
+                  {semesterOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                {formErrors.semester && (
+                  <span className="error-message">{formErrors.semester}</span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="editCollegeYearId">College Year *</label>
+                <select
+                  id="editCollegeYearId"
+                  name="collegeYearId"
+                  value={formData.collegeYearId}
+                  onChange={handleInputChange}
+                  className={formErrors.collegeYearId ? "error" : ""}
+                >
+                  <option value="">Select college year</option>
+                  {collegeYears.map((year) => (
+                    <option key={year.id} value={year.id}>
+                      {year.yearName}
+                    </option>
+                  ))}
+                </select>
+                {formErrors.collegeYearId && (
+                  <span className="error-message">
+                    {formErrors.collegeYearId}
+                  </span>
                 )}
               </div>
 
@@ -565,7 +700,7 @@ const YearsManagement = () => {
                   className="btn-primary"
                   disabled={submitting}
                 >
-                  {submitting ? "Updating..." : "Update Year"}
+                  {submitting ? "Updating..." : "Update Course"}
                 </button>
               </div>
             </form>
@@ -574,11 +709,11 @@ const YearsManagement = () => {
       )}
 
       {/* Delete Modal */}
-      {showDeleteModal && selectedYear && (
+      {showDeleteModal && selectedCourse && (
         <div className="modal-overlay" onClick={closeModals}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Delete College Year</h3>
+              <h3>Delete Course</h3>
               <button className="modal-close" onClick={closeModals}>
                 ×
               </button>
@@ -598,8 +733,8 @@ const YearsManagement = () => {
                   <line x1="9" y1="9" x2="15" y2="15"></line>
                 </svg>
                 <p>
-                  Are you sure you want to delete the year{" "}
-                  <strong>"{selectedYear.yearName}"</strong>?
+                  Are you sure you want to delete the course{" "}
+                  <strong>"{selectedCourse.courseName}"</strong>?
                 </p>
                 <p className="warning-text">This action cannot be undone.</p>
               </div>
@@ -615,10 +750,10 @@ const YearsManagement = () => {
               <button
                 type="button"
                 className="btn-danger"
-                onClick={handleDeleteYear}
+                onClick={handleDeleteCourse}
                 disabled={submitting}
               >
-                {submitting ? "Deleting..." : "Delete Year"}
+                {submitting ? "Deleting..." : "Delete Course"}
               </button>
             </div>
           </div>
@@ -628,4 +763,4 @@ const YearsManagement = () => {
   );
 };
 
-export default YearsManagement;
+export default CoursesManagement;

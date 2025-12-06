@@ -3,6 +3,7 @@ import Sidebar from "./Sidebar";
 import UserProfile from "./UserProfile";
 import YearsManagement from "./YearsManagement";
 import GroupsManagement from "./GroupsManagement";
+import CoursesManagement from "./CoursesManagement";
 import "./DashboardLayout.css";
 
 const DashboardLayout = ({ user, children }) => {
@@ -156,12 +157,7 @@ const DashboardLayout = ({ user, children }) => {
           </div>
         );
       case "courses":
-        return (
-          <div className="content-page">
-            <h1>Courses</h1>
-            <p>Manage academic courses and curricula.</p>
-          </div>
-        );
+        return <CoursesManagement />;
       case "groups":
         return <GroupsManagement />;
       case "years":
