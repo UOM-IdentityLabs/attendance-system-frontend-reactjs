@@ -4,6 +4,7 @@ import UserProfile from "./UserProfile";
 import YearsManagement from "./YearsManagement";
 import GroupsManagement from "./GroupsManagement";
 import CoursesManagement from "./CoursesManagement";
+import AdminsManagement from "./AdminsManagement";
 import "./DashboardLayout.css";
 
 const DashboardLayout = ({ user, children }) => {
@@ -150,12 +151,7 @@ const DashboardLayout = ({ user, children }) => {
           </div>
         );
       case "admins":
-        return (
-          <div className="content-page">
-            <h1>Admins</h1>
-            <p>Manage administrative users and permissions.</p>
-          </div>
-        );
+        return <AdminsManagement />;
       case "courses":
         return <CoursesManagement />;
       case "groups":
