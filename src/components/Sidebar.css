@@ -54,6 +54,7 @@
   flex: 1;
   padding: 16px 0;
   overflow-y: auto;
+  min-height: 0; /* Ensure flex item can shrink */
 }
 
 .nav-item {
@@ -103,6 +104,7 @@
   padding: 20px;
   border-top: 1px solid #334155;
   margin-top: auto;
+  flex-shrink: 0; /* Prevent the footer from shrinking */
 }
 
 .user-info {
@@ -144,6 +146,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  margin-bottom: 80px;
 }
 
 .logout-btn:hover {

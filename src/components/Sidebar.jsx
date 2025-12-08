@@ -25,6 +25,7 @@ const Sidebar = ({ user, onMenuSelect, selectedMenu }) => {
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
         </svg>
       ),
+      roles: ["department_head", "departmentHead", "teacher", "student"], // Available for all roles
     },
     {
       id: "students",
@@ -41,6 +42,7 @@ const Sidebar = ({ user, onMenuSelect, selectedMenu }) => {
           <path d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 14a7 7 0 0 0-7 7h14a7 7 0 0 0-7-7z" />
         </svg>
       ),
+      roles: ["department_head", "departmentHead"], // Only for department heads
     },
     {
       id: "teachers",
@@ -58,6 +60,7 @@ const Sidebar = ({ user, onMenuSelect, selectedMenu }) => {
           <circle cx="12" cy="7" r="4" />
         </svg>
       ),
+      roles: ["department_head", "departmentHead"], // Only for department heads
     },
     {
       id: "admins",
@@ -76,6 +79,7 @@ const Sidebar = ({ user, onMenuSelect, selectedMenu }) => {
           <path d="M2 12l10 5 10-5" />
         </svg>
       ),
+      roles: ["department_head", "departmentHead"], // Only for department heads
     },
     {
       id: "courses",
@@ -93,6 +97,7 @@ const Sidebar = ({ user, onMenuSelect, selectedMenu }) => {
           <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
         </svg>
       ),
+      roles: ["department_head", "departmentHead"], // Department heads and teachers
     },
     {
       id: "groups",
@@ -112,6 +117,7 @@ const Sidebar = ({ user, onMenuSelect, selectedMenu }) => {
           <path d="M16 3.13a4 4 0 0 1 0 7.75" />
         </svg>
       ),
+      roles: ["department_head", "departmentHead"], // Only for department heads
     },
     {
       id: "years",
@@ -131,6 +137,7 @@ const Sidebar = ({ user, onMenuSelect, selectedMenu }) => {
           <line x1="3" y1="10" x2="21" y2="10" />
         </svg>
       ),
+      roles: ["department_head", "departmentHead"], // Only for department heads
     },
     {
       id: "userProfile",
@@ -148,8 +155,14 @@ const Sidebar = ({ user, onMenuSelect, selectedMenu }) => {
           <circle cx="12" cy="7" r="4" />
         </svg>
       ),
+      roles: ["department_head", "departmentHead", "teacher", "student"], // Available for all roles
     },
   ];
+
+  // Filter menu items based on user role
+  const filteredMenuItems = menuItems.filter((item) =>
+    item.roles.includes(user?.role)
+  );
 
   return (
     <div className="sidebar">
@@ -170,7 +183,7 @@ const Sidebar = ({ user, onMenuSelect, selectedMenu }) => {
 
       {/* Navigation Menu */}
       <nav className="sidebar-nav">
-        {menuItems.map((item) => (
+        {filteredMenuItems.map((item) => (
           <button
             key={item.id}
             className={`nav-item ${selectedMenu === item.id ? "active" : ""}`}
