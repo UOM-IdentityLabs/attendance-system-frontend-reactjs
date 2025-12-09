@@ -146,7 +146,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-bottom: 80px;
+  margin-bottom: 8px;
 }
 
 .logout-btn:hover {
