@@ -29,6 +29,20 @@ const TeachersManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchTimeout, setSearchTimeout] = useState(null);
 
+  // Course Assignment States
+  const [showAssignCourseModal, setShowAssignCourseModal] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [courseAssignmentData, setCourseAssignmentData] = useState({
+    courseId: "",
+    courseType: "",
+    group: "",
+    teacherId: "",
+  });
+  const [selectedGroups, setSelectedGroups] = useState([]);
+  const [assignmentLoading, setAssignmentLoading] = useState(false);
+  const [assignmentError, setAssignmentError] = useState("");
+
   const limit = 100;
 
   useEffect(() => {
@@ -76,6 +90,128 @@ const TeachersManagement = () => {
     }, 500);
 
     setSearchTimeout(newTimeout);
+  };
+
+  // Course Assignment Functions
+  const fetchCourses = async () => {
+    try {
+      const response = await apiClient.get("/courses");
+      setCourses(response.data.courses || []);
+    } catch (err) {
+      console.error("Error fetching courses:", err);
+      setAssignmentError("Failed to load courses");
+    }
+  };
+
+  const fetchGroups = async () => {
+    try {
+      const response = await apiClient.get("/groups");
+      setGroups(response.data.groups || []);
+    } catch (err) {
+      console.error("Error fetching groups:", err);
+      setAssignmentError("Failed to load groups");
+    }
+  };
+
+  const openAssignCourseModal = async (teacher) => {
+    setSelectedTeacher(teacher);
+    setCourseAssignmentData({
+      courseId: "",
+      courseType: "",
+      group: "",
+      teacherId: teacher.id,
+    });
+    setSelectedGroups([]);
+    setAssignmentError("");
+    setShowAssignCourseModal(true);
+
+    // Fetch courses and groups data
+    await Promise.all([fetchCourses(), fetchGroups()]);
+  };
+
+  const closeAssignCourseModal = () => {
+    setShowAssignCourseModal(false);
+    setSelectedTeacher(null);
+    setCourseAssignmentData({
+      courseId: "",
+      courseType: "",
+      group: "",
+      teacherId: "",
+    });
+    setSelectedGroups([]);
+    setAssignmentError("");
+  };
+
+  const handleCourseTypeChange = (e) => {
+    const courseType = e.target.value;
+    setCourseAssignmentData((prev) => ({
+      ...prev,
+      courseType,
+      group: courseType === "Theory" ? "all" : "",
+    }));
+
+    // Reset selected groups when course type changes
+    if (courseType === "Theory") {
+      setSelectedGroups(groups.map((group) => group.groupName));
+    } else {
+      setSelectedGroups([]);
+    }
+  };
+
+  const handleGroupSelection = (groupName) => {
+    if (courseAssignmentData.courseType === "Practical") {
+      const newSelectedGroups = selectedGroups.includes(groupName)
+        ? selectedGroups.filter((g) => g !== groupName)
+        : [...selectedGroups, groupName];
+      setSelectedGroups(newSelectedGroups);
+    }
+  };
+
+  const handleAssignCourse = async (e) => {
+    e.preventDefault();
+
+    if (!courseAssignmentData.courseId || !courseAssignmentData.courseType) {
+      setAssignmentError("Please select both course and course type");
+      return;
+    }
+
+    if (
+      courseAssignmentData.courseType === "Practical" &&
+      selectedGroups.length === 0
+    ) {
+      setAssignmentError(
+        "Please select at least one group for practical courses"
+      );
+      return;
+    }
+
+    setAssignmentLoading(true);
+    setAssignmentError("");
+
+    try {
+      const payload = {
+        courseId: courseAssignmentData.courseId,
+        courseType: courseAssignmentData.courseType,
+        teacherId: courseAssignmentData.teacherId,
+        group:
+          courseAssignmentData.courseType === "Theory"
+            ? groups.map((group) => group.groupName).join(",")
+            : selectedGroups.join(","),
+      };
+
+      await apiClient.post("/teacher-courses", payload);
+
+      // Refresh teachers data to show the new assignment
+      await fetchTeachers();
+      closeAssignCourseModal();
+    } catch (err) {
+      console.error("Error assigning course:", err);
+      setAssignmentError(
+        err.response?.data?.message || "Failed to assign course"
+      );
+    } finally {
+      setAssignmentLoading(false);
+    }
   };
 
   const validateForm = (data) => {
@@ -312,6 +448,86 @@ const TeachersManagement = () => {
     return `${person.firstName} ${person.secondName} ${person.thirdName} ${person.fourthName}`.trim();
   };
 
+  const formatTeacherCourses = (teacherCourses, teacher) => {
+    if (!teacherCourses || teacherCourses.length === 0) {
+      return (
+        <button
+          className="assign-course-btn"
+          onClick={() => openAssignCourseModal(teacher)}
+          title="Assign course to this teacher"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Assign Course
+        </button>
+      );
+    }
+
+    return (
+      <div className="courses-list">
+        {teacherCourses.map((teacherCourse, index) => {
+          const course = teacherCourse.course;
+          const courseType = teacherCourse.courseType;
+          const prefix = courseType === "Theory" ? "T" : "P";
+          const group = teacherCourse.group;
+
+          // Format semester with proper capitalization
+          let semester = course.semester;
+          if (semester) {
+            semester =
+              semester.charAt(0).toUpperCase() +
+              semester.slice(1).toLowerCase();
+          }
+
+          const year = course.collegeYear?.yearName || null;
+
+          // Create display text - include group, semester, and year
+          let metaText = "";
+          const metaParts = [];
+
+          if (group && group.trim()) {
+            metaParts.push(`Groups ${group}`);
+          }
+
+          if (semester) {
+            metaParts.push(`${semester} Semester`);
+          }
+
+          if (year) {
+            metaParts.push(`${year} Year`);
+          }
+
+          if (metaParts.length > 0) {
+            metaText = metaParts.join(" • ");
+          } else {
+            metaText = "No details";
+          }
+
+          return (
+            <div key={teacherCourse.id} className="course-item">
+              <span className={`course-type ${courseType.toLowerCase()}`}>
+                {prefix}
+              </span>
+              <div className="course-details">
+                <span className="course-name">{course.courseName}</span>
+                <span className="course-meta">{metaText}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   const totalPages = Math.ceil(totalTeachers / limit);
 
   if (loading && teachers.length === 0) {
@@ -433,6 +649,7 @@ const TeachersManagement = () => {
               <th>Email</th>
               <th>Phone</th>
               <th>Specialization</th>
+              <th>Courses</th>
               <th>Birth Date</th>
               <th>Actions</th>
             </tr>
@@ -440,7 +657,7 @@ const TeachersManagement = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="6" className="loading-cell">
+                <td colSpan="7" className="loading-cell">
                   <div className="table-loading">
                     <div className="loading-spinner">
                       <svg className="spinner" fill="none" viewBox="0 0 24 24">
@@ -465,7 +682,7 @@ const TeachersManagement = () => {
               </tr>
             ) : teachers.length === 0 ? (
               <tr>
-                <td colSpan="6" className="empty-state">
+                <td colSpan="7" className="empty-state">
                   <div className="empty-content">
                     <svg className="empty-icon" fill="none" viewBox="0 0 24 24">
                       <path
@@ -500,6 +717,9 @@ const TeachersManagement = () => {
                   <td>{teacher.user.email}</td>
                   <td>{teacher.person.phone}</td>
                   <td>{teacher.specialization}</td>
+                  <td>
+                    {formatTeacherCourses(teacher.teacherCourses, teacher)}
+                  </td>
                   <td>{formatDate(teacher.person.birthDate)}</td>
                   <td>
                     <div className="action-buttons">
@@ -1092,6 +1312,166 @@ const TeachersManagement = () => {
                 {submitting ? "Deleting..." : "Delete"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Course Modal */}
+      {showAssignCourseModal && (
+        <div className="modal-overlay">
+          <div className="modal modal-sm">
+            <div className="modal-header">
+              <h2>Assign Course</h2>
+              <button
+                className="modal-close"
+                onClick={closeAssignCourseModal}
+                type="button"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleAssignCourse} className="modal-form">
+              {assignmentError && (
+                <div className="form-error">{assignmentError}</div>
+              )}
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Teacher</label>
+                  <input
+                    type="text"
+                    value={
+                      selectedTeacher
+                        ? `${selectedTeacher.person.firstName} ${selectedTeacher.person.secondName}`
+                        : ""
+                    }
+                    disabled
+                    className="form-control"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Course *</label>
+                  <select
+                    value={courseAssignmentData.courseId}
+                    onChange={(e) =>
+                      setCourseAssignmentData((prev) => ({
+                        ...prev,
+                        courseId: e.target.value,
+                      }))
+                    }
+                    required
+                    className="form-control"
+                  >
+                    <option value="">Select a course</option>
+                    {courses.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.courseName} - {course.semester} semester,{" "}
+                        {course.collegeYear?.yearName || "N/A"} year
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Course Type *</label>
+                  <select
+                    value={courseAssignmentData.courseType}
+                    onChange={handleCourseTypeChange}
+                    required
+                    className="form-control"
+                  >
+                    <option value="">Select course type</option>
+                    <option value="Theory">Theory</option>
+                    <option value="Practical">Practical</option>
+                  </select>
+                </div>
+              </div>
+
+              {courseAssignmentData.courseType === "Theory" && (
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Groups</label>
+                    <input
+                      type="text"
+                      value="All groups"
+                      disabled
+                      className="form-control"
+                    />
+                    <small className="form-help">
+                      Theory courses are automatically assigned to all groups
+                    </small>
+                  </div>
+                </div>
+              )}
+
+              {courseAssignmentData.courseType === "Practical" && (
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>
+                      Groups * (Select multiple for practical courses)
+                    </label>
+                    <div className="groups-selection">
+                      {groups.map((group) => (
+                        <label key={group.id} className="group-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={selectedGroups.includes(group.groupName)}
+                            onChange={() =>
+                              handleGroupSelection(group.groupName)
+                            }
+                          />
+                          <span className="checkmark"></span>
+                          Group {group.groupName}
+                        </label>
+                      ))}
+                    </div>
+                    {selectedGroups.length > 0 && (
+                      <small className="form-help">
+                        Selected: {selectedGroups.join(", ")}
+                      </small>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="cancel-btn"
+                  onClick={closeAssignCourseModal}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="submit-btn"
+                  disabled={
+                    assignmentLoading ||
+                    !courseAssignmentData.courseId ||
+                    !courseAssignmentData.courseType
+                  }
+                >
+                  {assignmentLoading ? "Assigning..." : "Assign Course"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
