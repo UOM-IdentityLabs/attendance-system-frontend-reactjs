@@ -117,7 +117,9 @@ const UserProfile = () => {
     userProfile?.teacher?.person ||
     userProfile?.student?.person;
   const department =
-    userProfile?.departmentHead?.department || userProfile?.teacher?.department;
+    userProfile?.departmentHead?.department ||
+    userProfile?.teacher?.department ||
+    userProfile?.student?.department;
 
   return (
     <div className="user-profile-container">
