@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import UserProfile from "./UserProfile";
 import YearsManagement from "./YearsManagement";
@@ -7,11 +7,47 @@ import CoursesManagement from "./CoursesManagement";
 import AdminsManagement from "./AdminsManagement";
 import StudentsManagement from "./StudentsManagement";
 import TeachersManagement from "./TeachersManagement";
+import apiClient from "../services/api";
 import "./DashboardLayout.css";
 
 const DashboardLayout = ({ user, children }) => {
   const [selectedMenu, setSelectedMenu] = useState("overview");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [counts, setCounts] = useState({
+    students: 0,
+    teachers: 0,
+    courses: 0,
+  });
+  const [countsLoading, setCountsLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch counts for department head dashboard
+    if (user?.role === "department_head" || user?.role === "departmentHead") {
+      fetchCounts();
+    }
+  }, [user?.role]);
+
+  const fetchCounts = async () => {
+    try {
+      setCountsLoading(true);
+      const [studentsRes, teachersRes, coursesRes] = await Promise.all([
+        apiClient.get("/students/count"),
+        apiClient.get("/teachers/count"),
+        apiClient.get("/courses/count"),
+      ]);
+
+      setCounts({
+        students: studentsRes.data.count || studentsRes.data || 0,
+        teachers: teachersRes.data.count || teachersRes.data || 0,
+        courses: coursesRes.data.count || coursesRes.data || 0,
+      });
+    } catch (err) {
+      console.error("Error fetching counts:", err);
+      // Keep default values on error
+    } finally {
+      setCountsLoading(false);
+    }
+  };
 
   const handleMenuSelect = (menuId) => {
     setSelectedMenu(menuId);
@@ -56,15 +92,21 @@ const DashboardLayout = ({ user, children }) => {
                 <>
                   <div className="stat-card">
                     <div className="stat-label">TOTAL STUDENTS</div>
-                    <div className="stat-value">1,247</div>
+                    <div className="stat-value">
+                      {countsLoading ? "..." : counts.students.toLocaleString()}
+                    </div>
                   </div>
                   <div className="stat-card">
                     <div className="stat-label">TOTAL TEACHERS</div>
-                    <div className="stat-value">89</div>
+                    <div className="stat-value">
+                      {countsLoading ? "..." : counts.teachers.toLocaleString()}
+                    </div>
                   </div>
                   <div className="stat-card">
                     <div className="stat-label">TOTAL COURSES</div>
-                    <div className="stat-value">42</div>
+                    <div className="stat-value">
+                      {countsLoading ? "..." : counts.courses.toLocaleString()}
+                    </div>
                   </div>
                   <div className="stat-card">
                     <div className="stat-label">ATTENDANCE RATE</div>
