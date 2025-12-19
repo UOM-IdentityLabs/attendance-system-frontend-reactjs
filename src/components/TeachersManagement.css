@@ -788,6 +788,23 @@
   padding: 8px 0;
 }
 
+/* Manage button (small icon) */
+.btn-manage {
+  padding: 8px;
+  border: none;
+  background: #eef2ff;
+  color: #3730a3;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-manage:hover {
+  background: #e0e7ff;
+}
+
 .group-checkbox {
   display: flex;
   align-items: center;

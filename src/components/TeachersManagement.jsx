@@ -42,6 +42,11 @@ const TeachersManagement = () => {
   const [selectedGroups, setSelectedGroups] = useState([]);
   const [assignmentLoading, setAssignmentLoading] = useState(false);
   const [assignmentError, setAssignmentError] = useState("");
+  const [showManageAssignmentsModal, setShowManageAssignmentsModal] =
+    useState(false);
+  const [showDeleteAssignmentModal, setShowDeleteAssignmentModal] =
+    useState(false);
+  const [assignmentToDelete, setAssignmentToDelete] = useState(null);
 
   const limit = 100;
 
@@ -127,6 +132,81 @@ const TeachersManagement = () => {
 
     // Fetch courses and groups data
     await Promise.all([fetchCourses(), fetchGroups()]);
+  };
+
+  const openManageAssignmentsModal = async (teacher) => {
+    // Open a modal that lists current assignments and allows deleting or adding new
+    setSelectedTeacher(teacher);
+    setShowManageAssignmentsModal(true);
+    setAssignmentError("");
+    // fetch latest groups and courses to ensure up-to-date options
+    await Promise.all([fetchCourses(), fetchGroups()]);
+  };
+
+  const closeManageAssignmentsModal = () => {
+    setShowManageAssignmentsModal(false);
+    setSelectedTeacher(null);
+  };
+
+  // Prompt delete assignment (open confirmation modal)
+  const promptDeleteAssignment = (teacherCourse) => {
+    setAssignmentToDelete(teacherCourse);
+    setAssignmentError("");
+    setShowDeleteAssignmentModal(true);
+  };
+
+  const confirmDeleteAssignment = async () => {
+    if (!assignmentToDelete || !selectedTeacher) return;
+
+    const assignmentId =
+      assignmentToDelete.id || assignmentToDelete.teacherCourseId || null;
+    const teacherId = selectedTeacher.id;
+    if (!assignmentId || !teacherId) return;
+
+    try {
+      setAssignmentLoading(true);
+      setAssignmentError("");
+      await apiClient.delete(`/teacher-courses/${assignmentId}`, {
+        data: { teacherId },
+      });
+
+      // Optimistically update UI: remove the deleted assignment from selectedTeacher
+      setSelectedTeacher((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          teacherCourses: (prev.teacherCourses || []).filter(
+            (tc) => (tc.id || tc.teacherCourseId) !== assignmentId
+          ),
+        };
+      });
+
+      // Also update the teachers list in the table so it reflects the change
+      setTeachers((prev) =>
+        prev.map((t) =>
+          t.id === teacherId
+            ? {
+                ...t,
+                teacherCourses: (t.teacherCourses || []).filter(
+                  (tc) => (tc.id || tc.teacherCourseId) !== assignmentId
+                ),
+              }
+            : t
+        )
+      );
+
+      setShowDeleteAssignmentModal(false);
+      setAssignmentToDelete(null);
+      // Close the Manage Assignments modal as well
+      setShowManageAssignmentsModal(false);
+    } catch (err) {
+      console.error("Error deleting assignment:", err);
+      setAssignmentError(
+        err.response?.data?.message || "Failed to delete assignment"
+      );
+    } finally {
+      setAssignmentLoading(false);
+    }
   };
 
   const closeAssignCourseModal = () => {
@@ -741,6 +821,23 @@ const TeachersManagement = () => {
                         </svg>
                       </button>
                       <button
+                        className="btn-manage"
+                        onClick={() => openManageAssignmentsModal(teacher)}
+                        title="Manage assignments"
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M12 5v14"></path>
+                          <path d="M5 12h14"></path>
+                        </svg>
+                      </button>
+                      <button
                         className="btn-delete"
                         onClick={() => openDeleteModal(teacher)}
                         title="Delete teacher"
@@ -1310,6 +1407,186 @@ const TeachersManagement = () => {
                 disabled={submitting}
               >
                 {submitting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manage Assignments Modal */}
+      {showManageAssignmentsModal && selectedTeacher && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h2>
+                Manage Assignments — {selectedTeacher.person.firstName}{" "}
+                {selectedTeacher.person.secondName}
+              </h2>
+              <button
+                className="modal-close"
+                onClick={closeManageAssignmentsModal}
+                type="button"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <p>Current course assignments for this teacher:</p>
+              <div className="courses-list">
+                {selectedTeacher.teacherCourses &&
+                selectedTeacher.teacherCourses.length > 0 ? (
+                  selectedTeacher.teacherCourses.map((tc) => (
+                    <div key={tc.id} className="course-item">
+                      <span
+                        className={`course-type ${tc.courseType.toLowerCase()}`}
+                      >
+                        {tc.courseType === "Theory" ? "T" : "P"}
+                      </span>
+                      <div className="course-details">
+                        <span className="course-name">
+                          {tc.course.courseName}
+                        </span>
+                        <span className="course-meta">
+                          {tc.course.semester
+                            ? tc.course.semester.charAt(0).toUpperCase() +
+                              tc.course.semester.slice(1)
+                            : ""}
+                          {tc.course.collegeYear
+                            ? ` • ${tc.course.collegeYear.yearName}`
+                            : ""}
+                          {tc.group ? ` • Groups ${tc.group}` : ""}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          className="btn-delete"
+                          title="Remove assignment"
+                          onClick={() => promptDeleteAssignment(tc)}
+                        >
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <path d="M3 6h18"></path>
+                            <path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6"></path>
+                            <path d="M10 11v6"></path>
+                            <path d="M14 11v6"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="no-courses">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    <span>No courses assigned</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={closeManageAssignmentsModal}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className="submit-btn"
+                onClick={() => {
+                  closeManageAssignmentsModal();
+                  openAssignCourseModal(selectedTeacher);
+                }}
+              >
+                Add Assignment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Assignment Confirmation Modal */}
+      {showDeleteAssignmentModal && assignmentToDelete && selectedTeacher && (
+        <div className="modal-overlay">
+          <div className="modal modal-sm">
+            <div className="modal-header">
+              <h2>Remove Course Assignment</h2>
+              <button
+                className="modal-close"
+                onClick={() => {
+                  setShowDeleteAssignmentModal(false);
+                  setAssignmentToDelete(null);
+                }}
+              >
+                <svg fill="none" viewBox="0 0 24 24">
+                  <path
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>
+                Are you sure you want to remove the course assignment for
+                <strong> {getFullName(selectedTeacher.person)}</strong>?
+              </p>
+              <p>
+                <strong>Course:</strong>{" "}
+                {assignmentToDelete.course?.courseName ||
+                  assignmentToDelete.courseName}
+              </p>
+            </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={() => {
+                  setShowDeleteAssignmentModal(false);
+                  setAssignmentToDelete(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="delete-btn"
+                onClick={confirmDeleteAssignment}
+                disabled={assignmentLoading}
+              >
+                {assignmentLoading ? "Removing..." : "Remove"}
               </button>
             </div>
           </div>
