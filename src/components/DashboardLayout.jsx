@@ -63,7 +63,7 @@ const DashboardLayout = ({ user, children }) => {
                     <div className="stat-value">89</div>
                   </div>
                   <div className="stat-card">
-                    <div className="stat-label">ACTIVE COURSES</div>
+                    <div className="stat-label">TOTAL COURSES</div>
                     <div className="stat-value">42</div>
                   </div>
                   <div className="stat-card">
