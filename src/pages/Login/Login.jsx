@@ -157,7 +157,7 @@ const Login = ({ onLoginSuccess }) => {
               />
             </svg>
             <div>
-              <div className="logo-text-main">Student Attendance</div>
+              <div className="logo-text-main">Attendance System</div>
               <div className="logo-text-sub">Dashboard Login</div>
             </div>
           </div>
