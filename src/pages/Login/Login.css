@@ -10,7 +10,7 @@
 
 .login-left {
   flex: 1;
-  background-image: url("../../assets/sedan.jpg");
+  background-image: url("../../assets/image.jpg");
   background-size: cover;
   background-position: center;
 }
@@ -97,7 +97,9 @@
   border: 1px solid #d1d5db;
   font-size: 14px;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
   background-color: #fafafa; /* Off-white background */
   color: #000000; /* Black text color */
 }
@@ -172,7 +174,9 @@
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.05s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.05s ease;
   display: flex;
   align-items: center;
   justify-content: center;
