@@ -118,6 +118,25 @@ const Sidebar = ({ user, onMenuSelect, selectedMenu }) => {
       roles: ["teacher"], // Only for teachers
     },
     {
+      id: "myAttendance",
+      label: "My Attendance",
+      icon: (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+          <path d="M9 11l3 3l8-8" />
+        </svg>
+      ),
+      roles: ["student"], // Only for students
+    },
+    {
       id: "groups",
       label: "Groups",
       icon: (

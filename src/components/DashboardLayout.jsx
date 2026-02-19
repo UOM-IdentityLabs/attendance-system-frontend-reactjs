@@ -8,6 +8,7 @@ import AdminsManagement from "./AdminsManagement";
 import StudentsManagement from "./StudentsManagement";
 import TeachersManagement from "./TeachersManagement";
 import AttendanceManagement from "./AttendanceManagement";
+import MyAttendance from "./MyAttendance";
 import apiClient from "../services/api";
 import "./DashboardLayout.css";
 
@@ -195,6 +196,8 @@ const DashboardLayout = ({ user, children }) => {
         return <YearsManagement />;
       case "attendance":
         return <AttendanceManagement />;
+      case "myAttendance":
+        return <MyAttendance />;
       case "userProfile":
         return <UserProfile />;
       default:
