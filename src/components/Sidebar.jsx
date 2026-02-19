@@ -100,6 +100,24 @@ const Sidebar = ({ user, onMenuSelect, selectedMenu }) => {
       roles: ["department_head", "departmentHead"], // Department heads and teachers
     },
     {
+      id: "attendance",
+      label: "Attendance",
+      icon: (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M9 11l3 3l8-8" />
+          <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9s4.03-9 9-9c1.51 0 2.93 0.37 4.18 1.03" />
+        </svg>
+      ),
+      roles: ["teacher"], // Only for teachers
+    },
+    {
       id: "groups",
       label: "Groups",
       icon: (
@@ -161,7 +179,7 @@ const Sidebar = ({ user, onMenuSelect, selectedMenu }) => {
 
   // Filter menu items based on user role
   const filteredMenuItems = menuItems.filter((item) =>
-    item.roles.includes(user?.role)
+    item.roles.includes(user?.role),
   );
 
   return (

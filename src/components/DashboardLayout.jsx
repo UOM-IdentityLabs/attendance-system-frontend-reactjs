@@ -7,6 +7,7 @@ import CoursesManagement from "./CoursesManagement";
 import AdminsManagement from "./AdminsManagement";
 import StudentsManagement from "./StudentsManagement";
 import TeachersManagement from "./TeachersManagement";
+import AttendanceManagement from "./AttendanceManagement";
 import apiClient from "../services/api";
 import "./DashboardLayout.css";
 
@@ -72,8 +73,8 @@ const DashboardLayout = ({ user, children }) => {
                 user?.role === "departmentHead"
                   ? "Department Head Dashboard"
                   : user?.role === "teacher"
-                  ? "Teacher Dashboard"
-                  : "Student Dashboard"}
+                    ? "Teacher Dashboard"
+                    : "Student Dashboard"}
               </h1>
               <p>
                 Welcome, {user?.name || user?.email}!{" "}
@@ -81,8 +82,8 @@ const DashboardLayout = ({ user, children }) => {
                 user?.role === "departmentHead"
                   ? "Manage your department's attendance and academic activities."
                   : user?.role === "teacher"
-                  ? "Manage your classes and track student attendance."
-                  : "Track your attendance and academic progress."}
+                    ? "Manage your classes and track student attendance."
+                    : "Track your attendance and academic progress."}
               </p>
             </div>
 
@@ -165,8 +166,8 @@ const DashboardLayout = ({ user, children }) => {
                   user?.role === "departmentHead"
                     ? "Department Overview"
                     : user?.role === "teacher"
-                    ? "My Teaching Activities"
-                    : "My Academic Progress"}
+                      ? "My Teaching Activities"
+                      : "My Academic Progress"}
                 </h2>
               </div>
               <p>
@@ -174,8 +175,8 @@ const DashboardLayout = ({ user, children }) => {
                 user?.role === "departmentHead"
                   ? "Access comprehensive tools to manage your department's academic operations, monitor attendance rates, and oversee faculty activities."
                   : user?.role === "teacher"
-                  ? "Track attendance, manage class schedules, and monitor student performance across all your assigned courses."
-                  : "View your attendance records, upcoming classes, and academic performance across all enrolled courses."}
+                    ? "Track attendance, manage class schedules, and monitor student performance across all your assigned courses."
+                    : "View your attendance records, upcoming classes, and academic performance across all enrolled courses."}
               </p>
             </div>
           </div>
@@ -192,6 +193,8 @@ const DashboardLayout = ({ user, children }) => {
         return <GroupsManagement />;
       case "years":
         return <YearsManagement />;
+      case "attendance":
+        return <AttendanceManagement />;
       case "userProfile":
         return <UserProfile />;
       default:
