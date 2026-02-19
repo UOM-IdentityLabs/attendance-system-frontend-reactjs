@@ -29,16 +29,13 @@ const AttendanceManagement = () => {
   }, [selectedCourseId]);
 
   useEffect(() => {
-    // Set default date range to current week
+    // Set default date range to today only
     const today = new Date();
-    const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
-    const weekEnd = new Date(
-      today.setDate(today.getDate() - today.getDay() + 6),
-    );
+    const todayString = today.toISOString().split("T")[0];
 
     setDateRange({
-      startDate: weekStart.toISOString().split("T")[0],
-      endDate: weekEnd.toISOString().split("T")[0],
+      startDate: todayString,
+      endDate: todayString,
     });
 
     // Fetch teacher courses on component mount
@@ -66,9 +63,13 @@ const AttendanceManagement = () => {
 
     setIsLoading(true);
     try {
-      const response = await apiClient.get(
-        `/attendance?course=${selectedCourseId}`,
-      );
+      // Build query parameters using the selected date range from calendar inputs
+      const params = new URLSearchParams();
+      params.append("course", selectedCourseId);
+      params.append("startDate", dateRange.startDate);
+      params.append("endDate", dateRange.endDate);
+
+      const response = await apiClient.get(`/attendance?${params.toString()}`);
       const attendanceData = response.data.attendances || [];
 
       // Transform the API response to match the component's expected format

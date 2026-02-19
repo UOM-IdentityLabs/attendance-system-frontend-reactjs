@@ -25,17 +25,22 @@ const MyAttendance = () => {
   }, [selectedCourseId]);
 
   useEffect(() => {
-    // Set default date range to current month
     const today = new Date();
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+    // Calculate week start (Sunday)
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - currentDay);
+
+    // Calculate week end (Thursday)
+    const weekEnd = new Date(today);
+    weekEnd.setDate(today.getDate() - currentDay + 4);
 
     setDateRange({
-      startDate: monthStart.toISOString().split("T")[0],
-      endDate: monthEnd.toISOString().split("T")[0],
+      startDate: weekStart.toISOString().split("T")[0],
+      endDate: weekEnd.toISOString().split("T")[0],
     });
 
-    // Fetch student courses on component mount
     fetchStudentCourses();
   }, []);
 
@@ -193,7 +198,7 @@ const MyAttendance = () => {
                     : !Array.isArray(studentCourses) ||
                         studentCourses.length === 0
                       ? "No courses available"
-                      : "Select a Course"}
+                      : "All Courses "}
                 </option>
                 {Array.isArray(studentCourses) &&
                   studentCourses.map((teacherCourse) => {
@@ -245,8 +250,7 @@ const MyAttendance = () => {
             <button
               className="fetch-btn"
               onClick={fetchMyAttendance}
-              disabled={isLoading || !selectedCourseId}
-              title={!selectedCourseId ? "Please select a course first" : ""}
+              disabled={isLoading}
             >
               {isLoading ? "Loading..." : "Get My Attendance"}
             </button>
@@ -299,14 +303,11 @@ const MyAttendance = () => {
           <div className="attendance-records">
             {attendanceRecords.length === 0 && !isLoading ? (
               <div className="no-records">
+                <p>No attendance records found for the selected criteria.</p>
                 <p>
-                  {!selectedCourseId
-                    ? "Please select a course to view your attendance records."
-                    : "No attendance records found for the selected criteria."}
-                </p>
-                <p>
-                  {selectedCourseId &&
-                    "Click 'Get My Attendance' to fetch data or adjust your filters."}
+                  Click 'Get My Attendance' to fetch your attendance records.
+                  You can optionally select a specific course to filter the
+                  results.
                 </p>
               </div>
             ) : attendanceRecords.length > 0 ? (
