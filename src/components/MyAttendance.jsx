@@ -185,9 +185,7 @@ const MyAttendance = () => {
                       })
                     : null;
                   setSelectedCourseId(
-                    selectedTeacherCourse
-                      ? selectedTeacherCourse.course.id
-                      : "",
+                    selectedTeacherCourse ? selectedTeacherCourse.id : "",
                   );
                 }}
                 disabled={isLoadingCourses}
