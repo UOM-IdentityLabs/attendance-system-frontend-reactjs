@@ -21,6 +21,13 @@ const AttendanceManagement = () => {
   const [attendanceMessage, setAttendanceMessage] = useState("");
   const [attendanceMessageType, setAttendanceMessageType] = useState(""); // "success" or "error"
 
+  // Clear attendance records when class selection changes
+  useEffect(() => {
+    setAttendanceRecords([]);
+    setAttendanceMessage("");
+    setAttendanceMessageType("");
+  }, [selectedCourseId]);
+
   useEffect(() => {
     // Set default date range to current week
     const today = new Date();
