@@ -78,9 +78,12 @@ const AttendanceManagement = () => {
         const fullName =
           `${person.firstName} ${person.secondName || ""} ${person.thirdName || ""} ${person.fourthName || ""}`.trim();
 
+        const groupName = attendance.student.group?.groupName || "No Group";
+
         return {
           id: attendance.id,
           studentName: fullName,
+          groupName: groupName,
           status: attendance.status,
           date: attendance.attendanceDate,
           studentId: attendance.student.id,
@@ -119,9 +122,10 @@ const AttendanceManagement = () => {
       const leftMargin = 20;
       const tableWidth = pageWidth - 2 * leftMargin; // Full width minus margins
       const columnWidths = [
-        tableWidth * 0.5, // Student name: 50% of table width
-        tableWidth * 0.25, // Date: 25% of table width
-        tableWidth * 0.25, // Status: 25% of table width
+        tableWidth * 0.4, // Student name: 40% of table width
+        tableWidth * 0.2, // Group: 20% of table width
+        tableWidth * 0.2, // Date: 20% of table width
+        tableWidth * 0.2, // Status: 20% of table width
       ];
       const rowHeight = 12;
 
@@ -137,14 +141,24 @@ const AttendanceManagement = () => {
       // Header text with proper positioning
       pdf.text("Student Name", leftMargin + 5, yPosition);
       pdf.text(
-        "Date",
+        "Group",
         leftMargin + columnWidths[0] + columnWidths[1] / 2,
         yPosition,
         { align: "center" },
       );
       pdf.text(
-        "Status",
+        "Date",
         leftMargin + columnWidths[0] + columnWidths[1] + columnWidths[2] / 2,
+        yPosition,
+        { align: "center" },
+      );
+      pdf.text(
+        "Status",
+        leftMargin +
+          columnWidths[0] +
+          columnWidths[1] +
+          columnWidths[2] +
+          columnWidths[3] / 2,
         yPosition,
         { align: "center" },
       );
@@ -181,6 +195,12 @@ const AttendanceManagement = () => {
           yPosition + 3,
         );
         pdf.line(
+          leftMargin + columnWidths[0] + columnWidths[1] + columnWidths[2],
+          yPosition - 9,
+          leftMargin + columnWidths[0] + columnWidths[1] + columnWidths[2],
+          yPosition + 3,
+        );
+        pdf.line(
           leftMargin + tableWidth,
           yPosition - 9,
           leftMargin + tableWidth,
@@ -197,16 +217,25 @@ const AttendanceManagement = () => {
 
         // Student name (left-aligned with padding)
         const studentName =
-          record.studentName.length > 35
-            ? record.studentName.substring(0, 32) + "..."
+          record.studentName.length > 25
+            ? record.studentName.substring(0, 22) + "..."
             : record.studentName;
         pdf.text(studentName, leftMargin + 5, yPosition);
+
+        // Group name (center-aligned)
+        const groupName = record.groupName || "N/A";
+        pdf.text(
+          groupName,
+          leftMargin + columnWidths[0] + columnWidths[1] / 2,
+          yPosition,
+          { align: "center" },
+        );
 
         // Date (center-aligned)
         const formattedDate = record.date.split("-").reverse().join("-");
         pdf.text(
           formattedDate,
-          leftMargin + columnWidths[0] + columnWidths[1] / 2,
+          leftMargin + columnWidths[0] + columnWidths[1] + columnWidths[2] / 2,
           yPosition,
           { align: "center" },
         );
@@ -215,7 +244,11 @@ const AttendanceManagement = () => {
         const status = record.status === "attended" ? "Present" : record.status;
         pdf.text(
           status,
-          leftMargin + columnWidths[0] + columnWidths[1] + columnWidths[2] / 2,
+          leftMargin +
+            columnWidths[0] +
+            columnWidths[1] +
+            columnWidths[2] +
+            columnWidths[3] / 2,
           yPosition,
           { align: "center" },
         );
@@ -509,6 +542,7 @@ const AttendanceManagement = () => {
                       <thead>
                         <tr>
                           <th>Student Name</th>
+                          <th>Group</th>
                           <th>Date</th>
                           <th>Status</th>
                         </tr>
@@ -519,6 +553,7 @@ const AttendanceManagement = () => {
                             <td className="student-name-cell">
                               {record.studentName}
                             </td>
+                            <td className="group-cell">{record.groupName}</td>
                             <td className="date-cell">
                               {record.date.split("-").reverse().join("-")}
                             </td>
