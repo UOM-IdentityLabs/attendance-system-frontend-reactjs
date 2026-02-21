@@ -32,9 +32,9 @@ const MyAttendance = () => {
     const weekStart = new Date(today);
     weekStart.setDate(today.getDate() - currentDay);
 
-    // Calculate week end (Thursday)
+    // Calculate week end (Saturday)
     const weekEnd = new Date(today);
-    weekEnd.setDate(today.getDate() - currentDay + 4);
+    weekEnd.setDate(today.getDate() - currentDay + 6);
 
     setDateRange({
       startDate: weekStart.toISOString().split("T")[0],
