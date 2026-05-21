@@ -342,47 +342,96 @@ const AttendanceManagement = () => {
     setAttendanceMessage("");
     setAttendanceMessageType("");
 
-    try {
-      const attendanceData = {
-        status: "attended",
-        attendanceDate: new Date().toISOString().split("T")[0], // Current date in YYYY-MM-DD format
-        teacherCourseId: selectedCourseId,
-      };
+    let stream = null;
+    let video = null;
 
-      const response = await apiClient.post("/attendance", attendanceData);
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+      });
+
+      video = document.createElement("video");
+      video.srcObject = stream;
+      video.muted = true;
+      video.playsInline = true;
+
+      await new Promise((resolve, reject) => {
+        video.onloadedmetadata = () => resolve();
+        video.onerror = () =>
+          reject(new Error("Failed to load camera stream."));
+      });
+
+      await video.play();
+
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
+      if (!video.videoWidth || !video.videoHeight) {
+        throw new Error("Camera stream is not ready.");
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const context = canvas.getContext("2d");
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const imageBlob = await new Promise((resolve) => {
+        canvas.toBlob(resolve, "image/jpeg", 0.9);
+      });
+
+      if (!imageBlob) {
+        throw new Error("Failed to capture image.");
+      }
+
+      const imageFile = new File([imageBlob], `attendance-${Date.now()}.jpg`, {
+        type: "image/jpeg",
+      });
+
+      const formData = new FormData();
+
+      formData.append("image", imageFile);
+      formData.append("status", "attended");
+      formData.append("attendanceDate", new Date().toISOString().split("T")[0]);
+      formData.append("teacherCourseId", selectedCourseId);
+
+      const response = await apiClient.post("/attendance", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       if (response.status === 201) {
         setAttendanceMessage(
-          `Attendance taking completed for ${selectedClass}. `,
+          `Attendance taking completed for ${selectedClass}.`,
         );
         setAttendanceMessageType("success");
       }
     } catch (error) {
+      const errorName = error?.name || "";
       console.error("Error taking attendance:", error);
 
-      let errorMessage = "Error initiating attendance. Please try again.";
-
-      if (error.response) {
-        const status = error.response.status;
-        switch (status) {
-          case 400:
-            errorMessage =
-              "Invalid request. Please check your input and try again.";
-            break;
-          case 404:
-            errorMessage = "Course not found. Please select a valid class.";
-            break;
-          case 500:
-            errorMessage = "Server error. Please try again later.";
-            break;
-          default:
-            errorMessage = `Error ${status}: ${error.response.data?.message || "Failed to initiate attendance"}`;
-        }
+      if (errorName === "AbortError") {
+        setAttendanceMessage(
+          "Camera capture was interrupted. Please try again.",
+        );
+      } else if (errorName === "NotAllowedError") {
+        setAttendanceMessage("Camera permission was denied.");
+      } else if (errorName === "NotFoundError") {
+        setAttendanceMessage("No camera device was found.");
+      } else {
+        setAttendanceMessage("Failed to capture image or take attendance.");
       }
-
-      setAttendanceMessage(errorMessage);
       setAttendanceMessageType("error");
     } finally {
+      if (video) {
+        video.pause();
+        video.srcObject = null;
+      }
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+
       setIsTakingAttendance(false);
     }
   };
