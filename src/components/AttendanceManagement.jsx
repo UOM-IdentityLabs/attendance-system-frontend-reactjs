@@ -346,9 +346,7 @@ const AttendanceManagement = () => {
     let video = null;
 
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-      });
+      stream = await getExternalCameraStream();
 
       video = document.createElement("video");
       video.srcObject = stream;
@@ -434,6 +432,43 @@ const AttendanceManagement = () => {
 
       setIsTakingAttendance(false);
     }
+  };
+
+  const getExternalCameraStream = async () => {
+    // FIRST ask permission using any camera
+    const tempStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+    });
+
+    // Now browser exposes labels/deviceIds
+    const devices = await navigator.mediaDevices.enumerateDevices();
+
+    const videoDevices = devices.filter(
+      (device) => device.kind === "videoinput",
+    );
+
+    console.log("Available cameras:", videoDevices);
+
+    const nuroumCamera = videoDevices.find((device) =>
+      device.label.toLowerCase().includes("nuroum"),
+    );
+
+    tempStream.getTracks().forEach((track) => track.stop());
+
+    if (nuroumCamera) {
+      return navigator.mediaDevices.getUserMedia({
+        video: {
+          deviceId: {
+            exact: nuroumCamera.deviceId,
+          },
+        },
+      });
+    }
+
+    // fallback camera
+    return navigator.mediaDevices.getUserMedia({
+      video: true,
+    });
   };
 
   return (
